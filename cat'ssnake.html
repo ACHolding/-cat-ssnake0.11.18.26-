@@ -1,0 +1,1663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAT'S SNAKE HTML PORT · PS5 ENGINE</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        :root {
+            --ps5-bg-dark: #050811;
+            --ps5-bg-mid: #0a1329;
+            --ps5-blue: #0070d1;
+            --ps5-cyan: #00d4ff;
+            --ps5-glow: rgba(0, 180, 255, 0.45);
+            --ps5-glass: rgba(14, 22, 42, 0.78);
+            --ps5-border: rgba(110, 190, 255, 0.28);
+            --ps5-text: #f0f6ff;
+            --ps5-sub: #7eb6ff;
+            --ps5-gold: #ffd966;
+        }
+
+        body {
+            background: radial-gradient(circle at 20% 15%, #10244d 0%, #070d1d 45%, #03050a 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+            color: var(--ps5-text);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Ambient PS5 background canvas */
+        #bgCanvas {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Main PS5 Shell Card */
+        .ps5-shell {
+            position: relative;
+            z-index: 2;
+            width: 940px;
+            max-width: 96vw;
+            min-height: 640px;
+            background: var(--ps5-glass);
+            backdrop-filter: blur(22px);
+            -webkit-backdrop-filter: blur(22px);
+            border-radius: 38px;
+            border: 1px solid var(--ps5-border);
+            box-shadow:
+                0 35px 70px -15px rgba(0, 0, 0, 0.88),
+                0 0 0 1px rgba(120, 200, 255, 0.16),
+                0 0 55px rgba(0, 112, 209, 0.28),
+                inset 0 1px 1px rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 24px 32px;
+            overflow: hidden;
+        }
+
+        /* Top PS5 Header Bar */
+        .ps5-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(126, 182, 255, 0.18);
+            padding-bottom: 14px;
+        }
+
+        .brand-cluster {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .ps5-pill {
+            background: linear-gradient(135deg, #ffffff 0%, #99ccff 100%);
+            color: #040914;
+            font-weight: 900;
+            font-size: 0.85rem;
+            letter-spacing: 3px;
+            padding: 5px 14px;
+            border-radius: 999px;
+            box-shadow: 0 0 18px rgba(0, 212, 255, 0.6);
+        }
+
+        .brand-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            letter-spacing: 3px;
+            color: var(--ps5-text);
+            text-shadow: 0 0 14px rgba(0, 180, 255, 0.65);
+        }
+
+        .brand-sub {
+            font-size: 0.72rem;
+            letter-spacing: 2.5px;
+            color: var(--ps5-sub);
+            text-transform: uppercase;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .beep-widget {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0, 14, 32, 0.78);
+            padding: 6px 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(0, 212, 255, 0.35);
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
+        }
+
+        .beep-led {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #00ffcc;
+            box-shadow: 0 0 10px #00ffcc, 0 0 20px #00aaff;
+            animation: ledPulse 1.6s infinite ease-in-out;
+        }
+
+        .beep-led.muted {
+            background: #ff4466;
+            box-shadow: 0 0 10px #ff4466;
+            animation: none;
+        }
+
+        @keyframes ledPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(0.82); opacity: 0.45; }
+        }
+
+        .boop-btn {
+            background: #000000;
+            color: var(--ps5-sub);
+            border: 1px solid rgba(0, 212, 255, 0.45);
+            border-radius: 999px;
+            padding: 5px 14px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            transition: all 0.14s ease;
+            text-transform: uppercase;
+        }
+
+        .boop-btn:hover {
+            color: #ffffff;
+            border-color: #00d4ff;
+            box-shadow: 0 0 14px rgba(0, 212, 255, 0.55);
+            transform: translateY(-1px);
+        }
+
+        .boop-btn:active {
+            transform: translateY(1px);
+        }
+
+        .clock-display {
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: #b8d8ff;
+        }
+
+        /* Screen Manager Area */
+        .screen-stage {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 18px 0;
+        }
+
+        .view-panel {
+            display: none;
+            width: 100%;
+            height: 100%;
+            animation: fadeIn 0.22s ease-out;
+        }
+
+        .view-panel.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px) scale(0.99); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* MAIN MENU VIEW */
+        .menu-layout {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1.05fr 1fr;
+            gap: 28px;
+            align-items: center;
+        }
+
+        .hero-card {
+            background: linear-gradient(155deg, rgba(8, 22, 48, 0.9), rgba(3, 9, 22, 0.95));
+            border-radius: 28px;
+            padding: 28px;
+            border: 1px solid rgba(0, 195, 255, 0.28);
+            box-shadow:
+                0 20px 45px rgba(0, 0, 0, 0.65),
+                inset 0 0 35px rgba(0, 120, 255, 0.14);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            align-self: flex-start;
+            background: rgba(0, 112, 209, 0.25);
+            border: 1px solid rgba(0, 212, 255, 0.4);
+            color: #99e5ff;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 2.5px;
+            padding: 4px 12px;
+            border-radius: 999px;
+            text-transform: uppercase;
+        }
+
+        .hero-title {
+            font-size: 2.65rem;
+            font-weight: 900;
+            letter-spacing: 4px;
+            line-height: 1.05;
+            background: linear-gradient(135deg, #ffffff 0%, #aae0ff 55%, #00a2ff 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 20px rgba(0, 150, 255, 0.45));
+        }
+
+        .hero-desc {
+            color: #9ec5eb;
+            font-size: 0.92rem;
+            line-height: 1.5;
+            letter-spacing: 0.5px;
+        }
+
+        .hero-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 6px;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.65);
+            border: 1px solid rgba(126, 182, 255, 0.24);
+            border-radius: 16px;
+            padding: 10px 12px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.68rem;
+            letter-spacing: 2px;
+            color: var(--ps5-sub);
+            text-transform: uppercase;
+        }
+
+        .stat-val {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-top: 2px;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.6);
+        }
+
+        .menu-list {
+            display: flex;
+            flex-direction: column;
+            gap: 11px;
+        }
+
+        .ps5-menu-btn {
+            background: #000000;
+            color: var(--ps5-sub);
+            border: 1px solid rgba(90, 165, 255, 0.28);
+            border-radius: 18px;
+            padding: 14px 22px;
+            font-size: 1.05rem;
+            font-weight: 800;
+            letter-spacing: 3px;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.55);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ps5-menu-btn::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 5px;
+            background: transparent;
+            transition: background 0.15s ease;
+        }
+
+        .ps5-menu-btn:hover,
+        .ps5-menu-btn.selected {
+            color: #ffffff;
+            border-color: #00d4ff;
+            transform: translateX(8px) scale(1.015);
+            box-shadow:
+                0 0 25px rgba(0, 170, 255, 0.45),
+                inset 0 0 18px rgba(0, 140, 255, 0.22);
+        }
+
+        .ps5-menu-btn:hover::before,
+        .ps5-menu-btn.selected::before {
+            background: linear-gradient(180deg, #00ffff, #0066ff);
+        }
+
+        .btn-tag {
+            font-size: 0.72rem;
+            letter-spacing: 2px;
+            color: #6a96c8;
+            font-weight: 600;
+        }
+
+        .ps5-menu-btn.selected .btn-tag,
+        .ps5-menu-btn:hover .btn-tag {
+            color: #aee6ff;
+        }
+
+        /* GAMEPLAY VIEW */
+        .game-layout {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .game-sidebar {
+            background: rgba(3, 8, 20, 0.82);
+            border: 1px solid rgba(110, 185, 255, 0.26);
+            border-radius: 26px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.85);
+        }
+
+        .hud-card {
+            background: #000000;
+            border: 1px solid rgba(0, 180, 255, 0.28);
+            border-radius: 16px;
+            padding: 11px 14px;
+        }
+
+        .hud-title {
+            font-size: 0.68rem;
+            letter-spacing: 2.5px;
+            color: var(--ps5-sub);
+            text-transform: uppercase;
+        }
+
+        .hud-value {
+            font-size: 1.55rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: #ffffff;
+            text-shadow: 0 0 12px rgba(0, 195, 255, 0.7);
+            margin-top: 2px;
+        }
+
+        .hud-value.gold {
+            color: var(--ps5-gold);
+            text-shadow: 0 0 12px rgba(255, 190, 0, 0.7);
+        }
+
+        .sidebar-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .small-ps5-btn {
+            background: #000000;
+            color: var(--ps5-sub);
+            border: 1px solid rgba(90, 165, 255, 0.35);
+            border-radius: 12px;
+            padding: 10px 12px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.12s ease;
+            text-transform: uppercase;
+        }
+
+        .small-ps5-btn:hover {
+            color: #ffffff;
+            border-color: #00d4ff;
+            box-shadow: 0 0 15px rgba(0, 195, 255, 0.45);
+        }
+
+        .canvas-stage {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .canvas-frame {
+            background: #030710;
+            padding: 12px;
+            border-radius: 30px;
+            border: 1px solid rgba(0, 212, 255, 0.4);
+            box-shadow:
+                0 0 38px rgba(0, 112, 209, 0.45),
+                inset 0 0 24px rgba(0, 0, 0, 0.95);
+            position: relative;
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 460px;
+            height: 460px;
+            max-width: 72vw;
+            max-height: 72vw;
+            border-radius: 20px;
+            background: #060b16;
+            cursor: pointer;
+        }
+
+        /*Sub-panels: SETTINGS, HELP, ABOUT, EXIT */
+        .modal-card {
+            width: 100%;
+            max-width: 760px;
+            margin: 0 auto;
+            background: rgba(4, 10, 24, 0.9);
+            border: 1px solid rgba(0, 195, 255, 0.35);
+            border-radius: 28px;
+            padding: 28px 34px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75);
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(126, 182, 255, 0.2);
+            padding-bottom: 12px;
+        }
+
+        .modal-title {
+            font-size: 1.6rem;
+            font-weight: 900;
+            letter-spacing: 4px;
+            color: #ffffff;
+            text-shadow: 0 0 15px rgba(0, 180, 255, 0.6);
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .setting-row {
+            background: #000000;
+            border: 1px solid rgba(110, 180, 255, 0.25);
+            border-radius: 16px;
+            padding: 14px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .setting-name {
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--ps5-sub);
+            text-transform: uppercase;
+        }
+
+        .toggle-btn {
+            background: #071326;
+            color: #ffffff;
+            border: 1px solid #00aaff;
+            border-radius: 999px;
+            padding: 6px 16px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            box-shadow: 0 0 12px rgba(0, 170, 255, 0.35);
+        }
+
+        .toggle-btn:hover {
+            background: #0055aa;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            color: #c4dfff;
+            font-size: 0.92rem;
+            line-height: 1.6;
+        }
+
+        .info-box {
+            background: rgba(0, 0, 0, 0.65);
+            border: 1px solid rgba(110, 180, 255, 0.22);
+            border-radius: 18px;
+            padding: 16px 20px;
+        }
+
+        .info-box h4 {
+            color: #00d4ff;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+            font-size: 0.88rem;
+            text-transform: uppercase;
+        }
+
+        kbd {
+            background: #0d1b33;
+            border: 1px solid #2f6aa8;
+            color: #aee0ff;
+            border-radius: 6px;
+            padding: 2px 8px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        /* Bottom PS5 DualSense Prompt Bar */
+        .ps5-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(126, 182, 255, 0.18);
+            padding-top: 12px;
+            font-size: 0.78rem;
+            letter-spacing: 2px;
+            color: var(--ps5-sub);
+        }
+
+        .dualsense-prompts {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .ds-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .ds-icon {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #000000;
+            border: 1px solid #55aaff;
+            color: #ffffff;
+            font-size: 0.72rem;
+            font-weight: 800;
+            box-shadow: 0 0 8px rgba(0, 170, 255, 0.45);
+        }
+
+        @media (max-width: 780px) {
+            .menu-layout, .game-layout, .settings-grid, .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Ambient PS5 Background Wave & Particle Canvas -->
+    <canvas id="bgCanvas"></canvas>
+
+    <div class="ps5-shell">
+        <!-- Top PS5 Status Bar -->
+        <header class="ps5-topbar">
+            <div class="brand-cluster">
+                <span class="ps5-pill">PS5</span>
+                <div>
+                    <div class="brand-title">CAT'S SNAKE HTML PORT</div>
+                    <div class="brand-sub">PS5 ENGINE · PS5 GRAPHICS · PS5 AUDIO · BEEPS N BOOPS = TRUE</div>
+                </div>
+            </div>
+
+            <div class="topbar-right">
+                <div class="beep-widget">
+                    <span class="beep-led" id="audioLed"></span>
+                    <span style="font-size:0.75rem; font-weight:700; letter-spacing:2px; color:#aee0ff;" id="audioStatusText">BEEPS: ON</span>
+                    <button class="boop-btn" id="testBoopBtn">🔊 BEEP N BOOP</button>
+                </div>
+                <div class="clock-display" id="clockDisplay">12:00</div>
+            </div>
+        </header>
+
+        <!-- Dynamic View Stage -->
+        <main class="screen-stage">
+            <!-- 1. MAIN MENU -->
+            <section class="view-panel active" id="view-menu">
+                <div class="menu-layout">
+                    <div class="hero-card">
+                        <span class="hero-badge">⚡ PS5 ENGINE v0.1 READY</span>
+                        <h1 class="hero-title">SNAKE<br>NEXT-GEN</h1>
+                        <p class="hero-desc">
+                            High-framerate 60 FPS PS5 glassmorphism engine coupled with real-time WebAudio Atari square &amp; sawtooth synthesizer beeps and boops.
+                        </p>
+                        <div class="hero-stats">
+                            <div class="stat-box">
+                                <div class="stat-label">HIGH SCORE</div>
+                                <div class="stat-val" id="menuHighScore">000</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-label">LAST SCORE</div>
+                                <div class="stat-val" id="menuLastScore">000</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-label">AUDIO ENGINE</div>
+                                <div class="stat-val" id="menuAudioTag">TRUE</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="menu-list" id="mainMenuButtons">
+                        <button class="ps5-menu-btn selected" data-action="play">
+                            <span>▶ PLAY GAME</span>
+                            <span class="btn-tag">LAUNCH ENGINE</span>
+                        </button>
+                        <button class="ps5-menu-btn" data-action="settings">
+                            <span>⚙ SETTINGS</span>
+                            <span class="btn-tag">PS5 AUDIO / GFX</span>
+                        </button>
+                        <button class="ps5-menu-btn" data-action="help">
+                            <span>? HELP</span>
+                            <span class="btn-tag">CONTROLS &amp; ORBS</span>
+                        </button>
+                        <button class="ps5-menu-btn" data-action="about">
+                            <span>ℹ ABOUT</span>
+                            <span class="btn-tag">SYS SPECS</span>
+                        </button>
+                        <button class="ps5-menu-btn" data-action="exit">
+                            <span>⏻ EXIT</span>
+                            <span class="btn-tag">REST MODE</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. PLAY GAME -->
+            <section class="view-panel" id="view-game">
+                <div class="game-layout">
+                    <aside class="game-sidebar">
+                        <div class="hud-card">
+                            <div class="hud-title">SCORE</div>
+                            <div class="hud-value" id="hudScore">000</div>
+                        </div>
+                        <div class="hud-card">
+                            <div class="hud-title">HIGH SCORE</div>
+                            <div class="hud-value gold" id="hudHigh">000</div>
+                        </div>
+                        <div class="hud-card">
+                            <div class="hud-title">COMBO / SPEED</div>
+                            <div class="hud-value" id="hudCombo">1.0x</div>
+                        </div>
+                        <div class="hud-card">
+                            <div class="hud-title">ENGINE STATUS</div>
+                            <div style="font-size:0.85rem; font-weight:700; color:#7eb6ff; margin-top:4px;" id="hudState">RUNNING · 60Hz</div>
+                        </div>
+
+                        <div class="sidebar-actions">
+                            <button class="small-ps5-btn" id="btnPauseGame">⏸ PAUSE (P)</button>
+                            <button class="small-ps5-btn" id="btnRestartGame">↻ RESTART (R)</button>
+                            <button class="small-ps5-btn" id="btnGameToMenu">⬅ MAIN MENU (ESC)</button>
+                        </div>
+                    </aside>
+
+                    <div class="canvas-stage">
+                        <div class="canvas-frame">
+                            <canvas id="gameCanvas" width="500" height="500"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. SETTINGS -->
+            <section class="view-panel" id="view-settings">
+                <div class="modal-card">
+                    <div class="modal-header">
+                        <div class="modal-title">⚙ PS5 ENGINE SETTINGS</div>
+                        <button class="small-ps5-btn" data-back="menu">⬅ BACK TO MENU</button>
+                    </div>
+
+                    <div class="settings-grid">
+                        <div class="setting-row">
+                            <span class="setting-name">BEEPS N BOOPS AUDIO</span>
+                            <button class="toggle-btn" id="optAudioToggle">TRUE (ON)</button>
+                        </div>
+                        <div class="setting-row">
+                            <span class="setting-name">SYNTH WAVEFORM</span>
+                            <button class="toggle-btn" id="optWaveform">ATARI SQUARE</button>
+                        </div>
+                        <div class="setting-row">
+                            <span class="setting-name">GAME SPEED</span>
+                            <button class="toggle-btn" id="optSpeed">NORMAL (125ms)</button>
+                        </div>
+                        <div class="setting-row">
+                            <span class="setting-name">GRID RESOLUTION</span>
+                            <button class="toggle-btn" id="optGrid">20 x 20</button>
+                        </div>
+                        <div class="setting-row">
+                            <span class="setting-name">PS5 BLOOM &amp; PARTICLES</span>
+                            <button class="toggle-btn" id="optParticles">ULTRA (ON)</button>
+                        </div>
+                        <div class="setting-row">
+                            <span class="setting-name">WALL MODE</span>
+                            <button class="toggle-btn" id="optWalls">SOLID ARENA</button>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+                        <span style="font-size:0.82rem; color:#7eb6ff; letter-spacing:1.5px;">
+                            All settings apply immediately to the PS5 Snake Engine.
+                        </span>
+                        <button class="small-ps5-btn" id="btnResetHigh">🗑 RESET HIGH SCORE</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. HELP -->
+            <section class="view-panel" id="view-help">
+                <div class="modal-card">
+                    <div class="modal-header">
+                        <div class="modal-title">? HOW TO PLAY &amp; CONTROLS</div>
+                        <button class="small-ps5-btn" data-back="menu">⬅ BACK TO MENU</button>
+                    </div>
+
+                    <div class="info-grid">
+                        <div class="info-box">
+                            <h4>🎮 NAVIGATION &amp; GAMEPLAY</h4>
+                            <p><kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd> or <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> : Steer Snake</p>
+                            <p><kbd>P</kbd> or <kbd>SPACE</kbd> : Pause / Resume Engine</p>
+                            <p><kbd>R</kbd> : Instant Restart</p>
+                            <p><kbd>B</kbd> : Trigger Manual Atari Beep-Boop</p>
+                            <p><kbd>ESC</kbd> : Return to PS5 Main Menu</p>
+                        </div>
+                        <div class="info-box">
+                            <h4>⚡ ORBS &amp; COMBO SYSTEM</h4>
+                            <p><strong>Cyan PS5 Orb (+10 PTS):</strong> Standard energy core. Grows snake &amp; plays dual-tone Atari eat beep.</p>
+                            <p><strong>Gold Hyper Orb (+30 PTS):</strong> Spawns periodically. Boosts combo multiplier &amp; triggers a 3-stage fanfare!</p>
+                            <p><strong>Combo Chain:</strong> Eat orbs rapidly to increase your score multiplier up to <strong>4.0x</strong>.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. ABOUT -->
+            <section class="view-panel" id="view-about">
+                <div class="modal-card">
+                    <div class="modal-header">
+                        <div class="modal-title">ℹ ABOUT CAT'S SNAKE HTML PORT</div>
+                        <button class="small-ps5-btn" data-back="menu">⬅ BACK TO MENU</button>
+                    </div>
+
+                    <div class="info-grid">
+                        <div class="info-box">
+                            <h4>🖥 ENGINE ARCHITECTURE</h4>
+                            <p><strong>Title:</strong> Cat's Snake HTML Port v0.1</p>
+                            <p><strong>Engine:</strong> Custom 60Hz HTML5 Canvas State Machine</p>
+                            <p><strong>Graphics:</strong> PS5 Neon Glassmorphism + Real-Time Particle Burst Shader &amp; Dynamic Ambient Wave Ribbon</p>
+                            <p><strong>Files Mode:</strong> Zero external dependencies (100% self-contained in RAM)</p>
+                        </div>
+                        <div class="info-box">
+                            <h4>🔊 PS5 + ATARI AUDIO SYNTH</h4>
+                            <p><strong>Audio Flag:</strong> <code>beeps_n_boops = true</code></p>
+                            <p><strong>Synthesizer:</strong> Native Web Audio API multi-oscillator engine (Square, Sawtooth, Triangle harmonics)</p>
+                            <p><strong>Branding:</strong> AC Kondo / Fort Command Retro-NextGen Suite (1999–2026)</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 6. EXIT / REST MODE -->
+            <section class="view-panel" id="view-exit">
+                <div class="modal-card" style="text-align:center; align-items:center; padding:46px 32px;">
+                    <div class="ps5-pill" style="margin-bottom:8px;">REST MODE</div>
+                    <div class="modal-title" style="font-size:2rem;">PS5 ENGINE STANDBY</div>
+                    <p style="color:#9ec5eb; max-width:480px; line-height:1.6;">
+                        Cat's Snake HTML Port is currently in low-power PS5 Rest Mode. Audio synthesizer and particle shaders are paused.
+                    </p>
+                    <div style="display:flex; gap:16px; margin-top:12px;">
+                        <button class="ps5-menu-btn selected" id="btnWakeUp" style="text-align:center; justify-content:center; min-width:240px;">
+                            ⚡ WAKE ENGINE (MAIN MENU)
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Bottom DualSense Bar -->
+        <footer class="ps5-footer">
+            <div class="dualsense-prompts">
+                <div class="ds-item"><span class="ds-icon">✕</span> <span>ENTER / CLICK: SELECT</span></div>
+                <div class="ds-item"><span class="ds-icon">○</span> <span>ESC: MAIN MENU</span></div>
+                <div class="ds-item"><span class="ds-icon">△</span> <span>B: BEEP N BOOP</span></div>
+            </div>
+            <div>AC KONDO · PS5 SNAKE ENGINE v0.1</div>
+        </footer>
+    </div>
+
+    <script>
+        (function () {
+            "use strict";
+
+            // =========================================================================
+            // 1. GLOBAL CONFIGURATION & ENGINE STATE
+            // =========================================================================
+            const CONFIG = {
+                beeps_n_boops: true,
+                waveform: "square",     // 'square' | 'sawtooth' | 'triangle'
+                moveInterval: 125,      // ms per grid step
+                gridSize: 20,           // 16 | 20 | 25
+                particles: true,
+                wrapWalls: false
+            };
+
+            let currentView = "menu";   // 'menu' | 'game' | 'settings' | 'help' | 'about' | 'exit'
+            let menuIndex = 0;
+            const menuButtons = Array.from(document.querySelectorAll("#mainMenuButtons .ps5-menu-btn"));
+
+            // =========================================================================
+            // 2. PS5 + ATARI WEB AUDIO SYNTHESIZER (beeps n boops = true)
+            // =========================================================================
+            let audioCtx = null;
+
+            function ensureAudio() {
+                if (!audioCtx) {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContextClass) {
+                        audioCtx = new AudioContextClass();
+                    }
+                }
+                if (audioCtx && audioCtx.state === "suspended") {
+                    audioCtx.resume();
+                }
+            }
+
+            function playTone(freq = 440, duration = 0.08, type = null, vol = 0.13, slideTo = null, delayMs = 0) {
+                if (!CONFIG.beeps_n_boops) return;
+                try {
+                    ensureAudio();
+                    if (!audioCtx) return;
+                    const start = audioCtx.currentTime + delayMs / 1000;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+
+                    osc.type = type || CONFIG.waveform;
+                    osc.frequency.setValueAtTime(freq, start);
+                    if (slideTo !== null) {
+                        osc.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), start + duration);
+                    }
+
+                    gain.gain.setValueAtTime(0.0001, start);
+                    gain.gain.linearRampToValueAtTime(vol, start + 0.008);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(start);
+                    osc.stop(start + duration + 0.01);
+                } catch (e) {
+                    // Ignore audio unlock errors before first gesture
+                }
+            }
+
+            const SFX = {
+                nav: () => {
+                    playTone(520, 0.045, null, 0.09, 640, 0);
+                },
+                select: () => {
+                    playTone(660, 0.06, null, 0.13, null, 0);
+                    playTone(990, 0.09, null, 0.13, null, 55);
+                },
+                back: () => {
+                    playTone(580, 0.05, null, 0.11, 360, 0);
+                },
+                boopTest: () => {
+                    playTone(880, 0.07, "square", 0.15, null, 0);
+                    playTone(1174.66, 0.07, "square", 0.15, null, 80);
+                    playTone(1567.98, 0.11, "sawtooth", 0.14, 1760, 160);
+                },
+                turn: () => {
+                    playTone(420, 0.03, null, 0.06, 500, 0);
+                },
+                step: () => {
+                    playTone(240, 0.018, "square", 0.03, null, 0);
+                },
+                eat: () => {
+                    playTone(784, 0.065, "square", 0.15, null, 0);
+                    playTone(1174.66, 0.09, "square", 0.14, 1318.5, 55);
+                },
+                hyperEat: () => {
+                    playTone(880, 0.06, "square", 0.16, null, 0);
+                    playTone(1318.5, 0.06, "square", 0.16, null, 60);
+                    playTone(1760, 0.14, "sawtooth", 0.16, 2093, 120);
+                },
+                crash: () => {
+                    playTone(220, 0.18, "sawtooth", 0.20, 95, 0);
+                    playTone(130, 0.28, "sawtooth", 0.18, 55, 110);
+                },
+                win: () => {
+                    playTone(523.25, 0.09, "square", 0.15, null, 0);
+                    playTone(659.25, 0.09, "square", 0.15, null, 95);
+                    playTone(783.99, 0.09, "square", 0.15, null, 190);
+                    playTone(1046.5, 0.22, "sawtooth", 0.16, null, 285);
+                }
+            };
+
+            // =========================================================================
+            // 3. PS5 AMBIENT WAVE & PARTICLE BACKGROUND ENGINE
+            // =========================================================================
+            const bgCanvas = document.getElementById("bgCanvas");
+            const bgCtx = bgCanvas.getContext("2d");
+            const bgOrbs = [];
+
+            function resizeBg() {
+                bgCanvas.width = window.innerWidth;
+                bgCanvas.height = window.innerHeight;
+            }
+            window.addEventListener("resize", resizeBg);
+            resizeBg();
+
+            for (let i = 0; i < 36; i++) {
+                bgOrbs.push({
+                    x: Math.random() * window.innerWidth,
+                    y: Math.random() * window.innerHeight,
+                    r: 1.5 + Math.random() * 4.2,
+                    vx: (Math.random() - 0.5) * 0.35,
+                    vy: -0.15 - Math.random() * 0.45,
+                    alpha: 0.15 + Math.random() * 0.45
+                });
+            }
+
+            function renderBackground(now) {
+                const w = bgCanvas.width;
+                const h = bgCanvas.height;
+                bgCtx.clearRect(0, 0, w, h);
+
+                // PS5 Flowing Ribbon Waves
+                for (let wave = 0; wave < 3; wave++) {
+                    bgCtx.beginPath();
+                    const baseY = h * (0.3 + wave * 0.22);
+                    for (let x = 0; x <= w; x += 24) {
+                        const y = baseY +
+                            Math.sin(x * 0.003 + now * 0.0009 + wave * 1.4) * (38 + wave * 14) +
+                            Math.cos(x * 0.0015 - now * 0.0005) * 20;
+                        if (x === 0) bgCtx.moveTo(x, y);
+                        else bgCtx.lineTo(x, y);
+                    }
+                    bgCtx.strokeStyle = `rgba(0, 180, 255, ${0.09 - wave * 0.02})`;
+                    bgCtx.lineWidth = 2.5;
+                    bgCtx.stroke();
+                }
+
+                // Floating Bokeh Particles
+                if (CONFIG.particles) {
+                    for (const orb of bgOrbs) {
+                        orb.x += orb.vx;
+                        orb.y += orb.vy;
+                        if (orb.y < -10) orb.y = h + 10;
+                        if (orb.x < -10) orb.x = w + 10;
+                        if (orb.x > w + 10) orb.x = -10;
+
+                        bgCtx.beginPath();
+                        bgCtx.arc(orb.x, orb.y, orb.r, 0, Math.PI * 2);
+                        bgCtx.fillStyle = `rgba(110, 205, 255, ${orb.alpha})`;
+                        bgCtx.fill();
+                    }
+                }
+            }
+
+            // =========================================================================
+            // 4. SNAKE GAMEPLAY ENGINE (60 FPS RENDER + FIXED STEP LOGIC)
+            // =========================================================================
+            const canvas = document.getElementById("gameCanvas");
+            const ctx = canvas.getContext("2d");
+
+            let snake = [];
+            let dir = { x: 1, y: 0 };
+            let nextDir = { x: 1, y: 0 };
+            let food = { x: 12, y: 10 };
+            let hyperOrb = null;        // { x, y, timer }
+            let score = 0;
+            let lastScore = 0;
+            let highScore = 0;
+            let combo = 1.0;
+            let comboTimer = 0;
+
+            let gameRunning = false;
+            let gamePaused = false;
+            let gameOver = false;
+            let gameWin = false;
+            let lastStepTime = 0;
+            let screenShake = 0;
+            let burstParticles = [];
+
+            // Load saved high score
+            try {
+                const saved = localStorage.getItem("cats_ps5_snake_high");
+                if (saved) highScore = parseInt(saved, 10) || 0;
+            } catch (e) {}
+
+            function syncScoreUI() {
+                const sStr = String(score).padStart(3, "0");
+                const hStr = String(highScore).padStart(3, "0");
+                const lStr = String(lastScore).padStart(3, "0");
+
+                document.getElementById("hudScore").textContent = sStr;
+                document.getElementById("hudHigh").textContent = hStr;
+                document.getElementById("menuHighScore").textContent = hStr;
+                document.getElementById("menuLastScore").textContent = lStr;
+                document.getElementById("hudCombo").textContent = combo.toFixed(1) + "x";
+            }
+            syncScoreUI();
+
+            function spawnParticles(gx, gy, color, count = 18) {
+                if (!CONFIG.particles) return;
+                const cell = canvas.width / CONFIG.gridSize;
+                const cx = (gx + 0.5) * cell;
+                const cy = (gy + 0.5) * cell;
+                for (let i = 0; i < count; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = 1.2 + Math.random() * 4.2;
+                    burstParticles.push({
+                        x: cx,
+                        y: cy,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        life: 1.0,
+                        color
+                    });
+                }
+            }
+
+            function freeCell() {
+                const G = CONFIG.gridSize;
+                for (let attempt = 0; attempt < 500; attempt++) {
+                    const x = Math.floor(Math.random() * G);
+                    const y = Math.floor(Math.random() * G);
+                    const onSnake = snake.some(s => s.x === x && s.y === y);
+                    const onHyper = hyperOrb && hyperOrb.x === x && hyperOrb.y === y;
+                    if (!onSnake && !onHyper) return { x, y };
+                }
+                for (let y = 0; y < G; y++) {
+                    for (let x = 0; x < G; x++) {
+                        if (!snake.some(s => s.x === x && s.y === y)) return { x, y };
+                    }
+                }
+                return null;
+            }
+
+            function resetSnakeEngine(playSfx = true) {
+                const mid = Math.floor(CONFIG.gridSize / 2);
+                snake = [
+                    { x: mid, y: mid },
+                    { x: mid - 1, y: mid },
+                    { x: mid - 2, y: mid }
+                ];
+                dir = { x: 1, y: 0 };
+                nextDir = { x: 1, y: 0 };
+                score = 0;
+                combo = 1.0;
+                comboTimer = 0;
+                hyperOrb = null;
+                burstParticles = [];
+                gameOver = false;
+                gameWin = false;
+                gamePaused = false;
+                gameRunning = true;
+                screenShake = 0;
+
+                const pos = freeCell();
+                food = pos || { x: 3, y: 3 };
+                document.getElementById("hudState").textContent = "RUNNING · 60Hz";
+                document.getElementById("btnPauseGame").textContent = "⏸ PAUSE (P)";
+                syncScoreUI();
+                lastStepTime = performance.now();
+                if (playSfx) SFX.select();
+            }
+
+            function stepSnake() {
+                if (!gameRunning || gamePaused || gameOver || gameWin) return;
+
+                const G = CONFIG.gridSize;
+                if ((nextDir.x !== 0 || nextDir.y !== 0) &&
+                    (dir.x !== -nextDir.x || dir.y !== -nextDir.y)) {
+                    dir = { ...nextDir };
+                }
+
+                let nx = snake[0].x + dir.x;
+                let ny = snake[0].y + dir.y;
+
+                if (CONFIG.wrapWalls) {
+                    nx = (nx + G) % G;
+                    ny = (ny + G) % G;
+                } else if (nx < 0 || nx >= G || ny < 0 || ny >= G) {
+                    triggerCrash();
+                    return;
+                }
+
+                const eatingFood = (nx === food.x && ny === food.y);
+                const eatingHyper = (hyperOrb && nx === hyperOrb.x && ny === hyperOrb.y);
+
+                const nextSnake = [{ x: nx, y: ny }, ...snake];
+                if (!eatingFood && !eatingHyper) {
+                    nextSnake.pop();
+                }
+
+                // Self collision check
+                if (nextSnake.slice(1).some(seg => seg.x === nx && seg.y === ny)) {
+                    triggerCrash();
+                    return;
+                }
+
+                snake = nextSnake;
+
+                if (comboTimer > 0) {
+                    comboTimer--;
+                    if (comboTimer === 0) combo = 1.0;
+                }
+
+                if (hyperOrb) {
+                    hyperOrb.timer--;
+                    if (hyperOrb.timer <= 0) hyperOrb = null;
+                }
+
+                if (eatingFood) {
+                    const pts = Math.round(10 * combo);
+                    score += pts;
+                    combo = Math.min(4.0, +(combo + 0.5).toFixed(1));
+                    comboTimer = 18;
+                    SFX.eat();
+                    spawnParticles(nx, ny, "#00e5ff", 22);
+
+                    const nextPos = freeCell();
+                    if (!nextPos) {
+                        gameWin = true;
+                        gameRunning = false;
+                        document.getElementById("hudState").textContent = "VICTORY!";
+                        SFX.win();
+                    } else {
+                        food = nextPos;
+                        if (!hyperOrb && Math.random() < 0.28) {
+                            const hPos = freeCell();
+                            if (hPos && (hPos.x !== food.x || hPos.y !== food.y)) {
+                                hyperOrb = { x: hPos.x, y: hPos.y, timer: 42 };
+                            }
+                        }
+                    }
+                } else if (eatingHyper) {
+                    const pts = Math.round(30 * combo);
+                    score += pts;
+                    combo = Math.min(4.0, +(combo + 1.0).toFixed(1));
+                    comboTimer = 24;
+                    SFX.hyperEat();
+                    spawnParticles(nx, ny, "#ffd966", 32);
+                    hyperOrb = null;
+                } else if (Math.random() < 0.25) {
+                    SFX.step();
+                }
+
+                if (score > highScore) {
+                    highScore = score;
+                    try { localStorage.setItem("cats_ps5_snake_high", highScore); } catch (e) {}
+                }
+                lastScore = score;
+                syncScoreUI();
+            }
+
+            function triggerCrash() {
+                gameOver = true;
+                gameRunning = false;
+                lastScore = score;
+                screenShake = 10;
+                document.getElementById("hudState").textContent = "CRASHED";
+                spawnParticles(snake[0].x, snake[0].y, "#ff3366", 34);
+                SFX.crash();
+                syncScoreUI();
+            }
+
+            function renderGameCanvas(now) {
+                const W = canvas.width;
+                const H = canvas.height;
+                const G = CONFIG.gridSize;
+                const cell = W / G;
+
+                ctx.save();
+                if (screenShake > 0) {
+                    const dx = (Math.random() - 0.5) * screenShake;
+                    const dy = (Math.random() - 0.5) * screenShake;
+                    ctx.translate(dx, dy);
+                    screenShake *= 0.85;
+                    if (screenShake < 0.4) screenShake = 0;
+                }
+
+                // Background
+                ctx.fillStyle = "#060b16";
+                ctx.fillRect(0, 0, W, H);
+
+                // Subtle PS5 Grid
+                ctx.strokeStyle = "rgba(0, 150, 255, 0.09)";
+                ctx.lineWidth = 1;
+                for (let i = 0; i <= G; i++) {
+                    const p = i * cell;
+                    ctx.beginPath();
+                    ctx.moveTo(p, 0);
+                    ctx.lineTo(p, H);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(0, p);
+                    ctx.lineTo(W, p);
+                    ctx.stroke();
+                }
+
+                // Draw Cyan PS5 Energy Orb
+                if (food) {
+                    const fx = (food.x + 0.5) * cell;
+                    const fy = (food.y + 0.5) * cell;
+                    const pulse = 1 + Math.sin(now * 0.008) * 0.14;
+                    const rad = cell * 0.38 * pulse;
+
+                    if (CONFIG.particles) {
+                        ctx.shadowColor = "#00d4ff";
+                        ctx.shadowBlur = 22;
+                    }
+                    ctx.beginPath();
+                    ctx.arc(fx, fy, rad, 0, Math.PI * 2);
+                    ctx.fillStyle = "#00d4ff";
+                    ctx.fill();
+
+                    ctx.beginPath();
+                    ctx.arc(fx, fy, rad * 0.5, 0, Math.PI * 2);
+                    ctx.fillStyle = "#ffffff";
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+
+                // Draw Gold Hyper Orb
+                if (hyperOrb) {
+                    const hx = (hyperOrb.x + 0.5) * cell;
+                    const hy = (hyperOrb.y + 0.5) * cell;
+                    const pulse = 1 + Math.cos(now * 0.014) * 0.18;
+                    const rad = cell * 0.42 * pulse;
+
+                    if (CONFIG.particles) {
+                        ctx.shadowColor = "#ffbb00";
+                        ctx.shadowBlur = 26;
+                    }
+                    ctx.beginPath();
+                    ctx.arc(hx, hy, rad, 0, Math.PI * 2);
+                    ctx.fillStyle = "#ffd966";
+                    ctx.fill();
+
+                    ctx.beginPath();
+                    ctx.arc(hx, hy, rad * 0.45, 0, Math.PI * 2);
+                    ctx.fillStyle = "#ffffff";
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+
+                // Draw Snake Segments
+                for (let i = snake.length - 1; i >= 0; i--) {
+                    const seg = snake[i];
+                    const x = seg.x * cell;
+                    const y = seg.y * cell;
+                    const pad = i === 0 ? 1.5 : 3;
+                    const size = cell - pad * 2;
+
+                    if (i === 0) {
+                        if (CONFIG.particles) {
+                            ctx.shadowColor = "#00e5ff";
+                            ctx.shadowBlur = 22;
+                        }
+                        ctx.fillStyle = "#e8f6ff";
+                        ctx.beginPath();
+                        ctx.roundRect(x + pad, y + pad, size, size, 7);
+                        ctx.fill();
+
+                        // Eyes
+                        ctx.shadowBlur = 0;
+                        ctx.fillStyle = "#003377";
+                        const eyeR = Math.max(2, size * 0.13);
+                        ctx.beginPath();
+                        ctx.arc(x + cell * 0.34, y + cell * 0.34, eyeR, 0, Math.PI * 2);
+                        ctx.arc(x + cell * 0.66, y + cell * 0.34, eyeR, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else {
+                        const ratio = 1 - (i / Math.max(1, snake.length)) * 0.65;
+                        if (CONFIG.particles) {
+                            ctx.shadowColor = "#0070d1";
+                            ctx.shadowBlur = 12;
+                        }
+                        ctx.fillStyle = `rgba(0, ${Math.round(140 + 75 * ratio)}, 255, ${0.45 + 0.5 * ratio})`;
+                        ctx.beginPath();
+                        ctx.roundRect(x + pad, y + pad, size, size, 5);
+                        ctx.fill();
+                    }
+                }
+                ctx.shadowBlur = 0;
+
+                // Particle Bursts
+                for (let i = burstParticles.length - 1; i >= 0; i--) {
+                    const p = burstParticles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life -= 0.035;
+                    if (p.life <= 0) {
+                        burstParticles.splice(i, 1);
+                        continue;
+                    }
+                    ctx.globalAlpha = p.life;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 3.2 * p.life, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+
+                // Overlays: Pause / Game Over / Win
+                if (gamePaused || gameOver || gameWin) {
+                    ctx.fillStyle = "rgba(3, 8, 20, 0.78)";
+                    ctx.fillRect(0, 0, W, H);
+
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.shadowColor = "#00d4ff";
+                    ctx.shadowBlur = 24;
+                    ctx.fillStyle = "#ffffff";
+                    ctx.font = "900 36px 'Segoe UI', sans-serif";
+
+                    const heading = gameWin ? "YOU WIN!" : (gameOver ? "GAME OVER" : "ENGINE PAUSED");
+                    ctx.fillText(heading, W / 2, H / 2 - 22);
+
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = "#8ec8ff";
+                    ctx.font = "700 16px 'Segoe UI', sans-serif";
+                    const sub = gamePaused
+                        ? "PRESS P TO RESUME · ESC FOR MAIN MENU"
+                        : "PRESS R OR CLICK TO PLAY AGAIN · ESC FOR MENU";
+                    ctx.fillText(sub, W / 2, H / 2 + 24);
+                }
+
+                ctx.restore();
+            }
+
+            // Polyfill roundRect if needed
+            if (!CanvasRenderingContext2D.prototype.roundRect) {
+                CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+                    this.rect(x, y, w, h);
+                    return this;
+                };
+            }
+
+            // =========================================================================
+            // 5. VIEW NAVIGATION & MENU CONTROLLER
+            // =========================================================================
+            function switchView(target) {
+                currentView = target;
+                document.querySelectorAll(".view-panel").forEach(el => {
+                    el.classList.toggle("active", el.id === `view-${target}`);
+                });
+
+                if (target === "play" || target === "game") {
+                    currentView = "game";
+                    document.getElementById("view-game").classList.add("active");
+                    resetSnakeEngine(true);
+                } else {
+                    gameRunning = false;
+                    SFX.select();
+                }
+            }
+
+            function updateMenuSelection() {
+                menuButtons.forEach((btn, idx) => {
+                    btn.classList.toggle("selected", idx === menuIndex);
+                });
+            }
+
+            menuButtons.forEach((btn, idx) => {
+                btn.addEventListener("mouseenter", () => {
+                    if (menuIndex !== idx) {
+                        menuIndex = idx;
+                        updateMenuSelection();
+                        SFX.nav();
+                    }
+                });
+                btn.addEventListener("click", () => {
+                    menuIndex = idx;
+                    updateMenuSelection();
+                    const action = btn.getAttribute("data-action");
+                    if (action === "play") switchView("game");
+                    else switchView(action);
+                });
+            });
+
+            document.querySelectorAll("[data-back]").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    SFX.back();
+                    switchView("menu");
+                });
+            });
+
+            document.getElementById("btnWakeUp").addEventListener("click", () => {
+                SFX.boopTest();
+                switchView("menu");
+            });
+
+            // Gameplay sidebar buttons
+            document.getElementById("btnPauseGame").addEventListener("click", togglePause);
+            document.getElementById("btnRestartGame").addEventListener("click", () => resetSnakeEngine(true));
+            document.getElementById("btnGameToMenu").addEventListener("click", () => {
+                SFX.back();
+                switchView("menu");
+            });
+
+            canvas.addEventListener("click", () => {
+                if (gameOver || gameWin) resetSnakeEngine(true);
+                else SFX.nav();
+            });
+
+            function togglePause() {
+                if (gameOver || gameWin) return;
+                gamePaused = !gamePaused;
+                document.getElementById("hudState").textContent = gamePaused ? "PAUSED" : "RUNNING · 60Hz";
+                document.getElementById("btnPauseGame").textContent = gamePaused ? "▶ RESUME (P)" : "⏸ PAUSE (P)";
+                SFX.nav();
+            }
+
+            // =========================================================================
+            // 6. SETTINGS CONTROLS & TOPBAR BEEP WIDGET
+            // =========================================================================
+            function syncAudioTopbar() {
+                const led = document.getElementById("audioLed");
+                const txt = document.getElementById("audioStatusText");
+                const tag = document.getElementById("menuAudioTag");
+                const btn = document.getElementById("optAudioToggle");
+
+                led.classList.toggle("muted", !CONFIG.beeps_n_boops);
+                txt.textContent = CONFIG.beeps_n_boops ? "BEEPS: ON" : "BEEPS: OFF";
+                tag.textContent = CONFIG.beeps_n_boops ? "TRUE" : "FALSE";
+                btn.textContent = CONFIG.beeps_n_boops ? "TRUE (ON)" : "FALSE (MUTE)";
+            }
+
+            document.getElementById("testBoopBtn").addEventListener("click", () => {
+                CONFIG.beeps_n_boops = true;
+                syncAudioTopbar();
+                SFX.boopTest();
+            });
+
+            document.getElementById("optAudioToggle").addEventListener("click", () => {
+                CONFIG.beeps_n_boops = !CONFIG.beeps_n_boops;
+                syncAudioTopbar();
+                if (CONFIG.beeps_n_boops) SFX.boopTest();
+            });
+
+            const waveforms = [
+                { id: "square", label: "ATARI SQUARE" },
+                { id: "sawtooth", label: "PS5 SAWTOOTH" },
+                { id: "triangle", label: "RETRO TRIANGLE" }
+            ];
+            let waveIdx = 0;
+            document.getElementById("optWaveform").addEventListener("click", (e) => {
+                waveIdx = (waveIdx + 1) % waveforms.length;
+                CONFIG.waveform = waveforms[waveIdx].id;
+                e.target.textContent = waveforms[waveIdx].label;
+                SFX.eat();
+            });
+
+            const speeds = [
+                { ms: 125, label: "NORMAL (125ms)" },
+                { ms: 85, label: "TURBO (85ms)" },
+                { ms: 60, label: "HYPER (60ms)" }
+            ];
+            let speedIdx = 0;
+            document.getElementById("optSpeed").addEventListener("click", (e) => {
+                speedIdx = (speedIdx + 1) % speeds.length;
+                CONFIG.moveInterval = speeds[speedIdx].ms;
+                e.target.textContent = speeds[speedIdx].label;
+                SFX.select();
+            });
+
+            const grids = [20, 25, 16];
+            let gridIdx = 0;
+            document.getElementById("optGrid").addEventListener("click", (e) => {
+                gridIdx = (gridIdx + 1) % grids.length;
+                CONFIG.gridSize = grids[gridIdx];
+                e.target.textContent = `${CONFIG.gridSize} x ${CONFIG.gridSize}`;
+                SFX.select();
+            });
+
+            document.getElementById("optParticles").addEventListener("click", (e) => {
+                CONFIG.particles = !CONFIG.particles;
+                e.target.textContent = CONFIG.particles ? "ULTRA (ON)" : "MINIMAL (OFF)";
+                SFX.nav();
+            });
+
+            document.getElementById("optWalls").addEventListener("click", (e) => {
+                CONFIG.wrapWalls = !CONFIG.wrapWalls;
+                e.target.textContent = CONFIG.wrapWalls ? "PORTAL WRAP" : "SOLID ARENA";
+                SFX.nav();
+            });
+
+            document.getElementById("btnResetHigh").addEventListener("click", () => {
+                highScore = 0;
+                lastScore = 0;
+                try { localStorage.removeItem("cats_ps5_snake_high"); } catch (e) {}
+                syncScoreUI();
+                SFX.back();
+            });
+
+            // =========================================================================
+            // 7. GLOBAL KEYBOARD INPUT HANDLER
+            // =========================================================================
+            window.addEventListener("keydown", (e) => {
+                const key = e.key;
+                if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(key)) {
+                    e.preventDefault();
+                }
+
+                if (key === "b" || key === "B") {
+                    SFX.boopTest();
+                    return;
+                }
+
+                if (currentView === "menu") {
+                    if (key === "ArrowUp" || key === "w" || key === "W") {
+                        menuIndex = (menuIndex - 1 + menuButtons.length) % menuButtons.length;
+                        updateMenuSelection();
+                        SFX.nav();
+                    } else if (key === "ArrowDown" || key === "s" || key === "S") {
+                        menuIndex = (menuIndex + 1) % menuButtons.length;
+                        updateMenuSelection();
+                        SFX.nav();
+                    } else if (key === "Enter" || key === " ") {
+                        menuButtons[menuIndex].click();
+                    }
+                    return;
+                }
+
+                if (key === "Escape") {
+                    SFX.back();
+                    switchView("menu");
+                    return;
+                }
+
+                if (currentView === "game") {
+                    if (key === "r" || key === "R") {
+                        resetSnakeEngine(true);
+                        return;
+                    }
+                    if (key === "p" || key === "P" || key === " ") {
+                        togglePause();
+                        return;
+                    }
+                    if (gamePaused || gameOver || gameWin) return;
+
+                    if ((key === "ArrowUp" || key === "w" || key === "W") && dir.y !== 1) {
+                        nextDir = { x: 0, y: -1 };
+                        SFX.turn();
+                    } else if ((key === "ArrowDown" || key === "s" || key === "S") && dir.y !== -1) {
+                        nextDir = { x: 0, y: 1 };
+                        SFX.turn();
+                    } else if ((key === "ArrowLeft" || key === "a" || key === "A") && dir.x !== 1) {
+                        nextDir = { x: -1, y: 0 };
+                        SFX.turn();
+                    } else if ((key === "ArrowRight" || key === "d" || key === "D") && dir.x !== -1) {
+                        nextDir = { x: 1, y: 0 };
+                        SFX.turn();
+                    }
+                }
+            });
+
+            // =========================================================================
+            // 8. CLOCK & 60 FPS MASTER ENGINE LOOP
+            // =========================================================================
+            function updateClock() {
+                const now = new Date();
+                const hh = String(now.getHours()).padStart(2, "0");
+                const mm = String(now.getMinutes()).padStart(2, "0");
+                document.getElementById("clockDisplay").textContent = `${hh}:${mm}`;
+            }
+            updateClock();
+            setInterval(updateClock, 10000);
+
+            function engineLoop(now) {
+                if (currentView !== "exit") {
+                    renderBackground(now);
+                }
+                if (currentView === "game") {
+                    if (gameRunning && !gamePaused && !gameOver && !gameWin) {
+                        if (now - lastStepTime >= CONFIG.moveInterval) {
+                            stepSnake();
+                            lastStepTime = now;
+                        }
+                    }
+                    renderGameCanvas(now);
+                }
+                requestAnimationFrame(engineLoop);
+            }
+
+            resetSnakeEngine(false);
+            gameRunning = false;
+            requestAnimationFrame(engineLoop);
+        })();
+    </script>
+</body>
+</html>
